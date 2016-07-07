@@ -1,5 +1,6 @@
 notary
 notary.exe
+notary.iml
 
 # Created by https://www.gitignore.io/api/go,linux,emacs,vim,osx,windows,intellij,eclipse,netbeans
 
@@ -153,6 +154,7 @@ $RECYCLE.BIN/
 # Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839
 
 # User-specific stuff:
+.idea/
 .idea/workspace.xml
 .idea/tasks.xml
 .idea/dictionaries
