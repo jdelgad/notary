@@ -5,5 +5,12 @@
 
 package main
 
+import (
+	"github.com/jdelgad/notary/endpoint"
+)
+
 func main() {
+	e := endpoint.NewEndpoint("127.0.0.1", 9000, "/email")
+	e.Setup()
+	e.Run()
 }
