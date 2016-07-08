@@ -1,5 +1,9 @@
 # Notary
 ---
+[![Build Status](https://travis-ci.org/jdelgad/notary.svg?branch=master)](https://travis-ci.org/jdelgad/notary)
+[![codecov](https://codecov.io/gh/jdelgad/notary/branch/master/graph/badge.svg)](https://codecov.io/gh/jdelgad/notary)
+[![GoDoc](https://godoc.org/github.com/jdelgad/notary?status.svg)](https://godoc.org/github.com/jdelgad/notary)
+
 An HTTP REST endpoint service reporting whether a POSTed JSON object containing
 an email is valid.
 
