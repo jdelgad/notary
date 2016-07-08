@@ -1,6 +1,7 @@
 notary
 notary.exe
 notary.iml
+coverage.txt
 
 # Created by https://www.gitignore.io/api/go,linux,emacs,vim,osx,windows,intellij,eclipse,netbeans
 
