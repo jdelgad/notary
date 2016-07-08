@@ -18,39 +18,52 @@ type response struct {
 	Msg        string
 }
 
-type Email struct {
+type email struct {
 	Email string `json:"email"`
 }
 
+// Endpoint is a configuration object representing the IP address, port and
+// route for this service's REST endpoint.
 type Endpoint struct {
-	Address string
-	Port    uint
-	Mux     *http.ServeMux
-	route   string
+	addr  string
+	port  uint
+	mux   *http.ServeMux
+	route string
 }
 
 const (
-	only_post_msg          = "Only POST method is supported."
-	content_type_msg       = "Content-Type header must be application/json."
-	valid_email_msg        = "Email is valid."
-	invalid_json_msg       = "Invalid JSON request."
-	json_missing_email_msg = "Invalid JSON request. Missing key email."
+	onlyPostMsg         = "Only POST method is supported."
+	contentTypeMsg      = "Content-Type header must be application/json."
+	validEmailMsg       = "Email is valid."
+	invalidJSONMsg      = "Invalid JSON request."
+	jsonMissingEmailMsg = "Invalid JSON request. Missing key email."
 )
 
+// NewEndpoint returns a new Endpoint object to be used for serving an HTTP
+// REST endpoint with the user specified parameters.
 func NewEndpoint(addr string, port uint, route string) Endpoint {
-	return Endpoint{Address: addr, Port: port, route: route, Mux: http.NewServeMux()}
+	return Endpoint{addr: addr, port: port, route: route,
+		mux: http.NewServeMux()}
 }
 
+// Setup the HTTP REST endpoint given the user specified options.
 func (e *Endpoint) Setup() {
-	e.Mux.HandleFunc(e.route, verify)
+	e.mux.HandleFunc(e.route, verify)
 }
 
+// ServeHTTP serves a given request routing it to the appropriate router given
+// the requested endpoint.
 func (e *Endpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	e.Mux.ServeHTTP(w, r)
+	e.mux.ServeHTTP(w, r)
 }
 
+// Run the HTTP REST endpoint given the endpoint configuration object.
 func (e *Endpoint) Run() {
-	http.ListenAndServe(fmt.Sprintf("%s:%d", e.Address, e.Port), e.Mux)
+	err := http.ListenAndServe(fmt.Sprintf("%s:%d", e.addr, e.port), e.mux)
+	if err != nil {
+		log.Fatalf("Web server was not able to run on address %s:%d",
+			e.addr, e.port)
+	}
 }
 
 func respond(w http.ResponseWriter, statusCode int, msg string) {
@@ -68,11 +81,11 @@ func respond(w http.ResponseWriter, statusCode int, msg string) {
 
 func verify(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
-		respond(w, http.StatusForbidden, only_post_msg)
+		respond(w, http.StatusForbidden, onlyPostMsg)
 		return
 	}
 	if r.Header.Get("Content-Type") != "application/json" {
-		respond(w, http.StatusBadRequest, content_type_msg)
+		respond(w, http.StatusBadRequest, contentTypeMsg)
 		return
 	}
 
@@ -80,19 +93,19 @@ func verify(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		respond(w, http.StatusBadRequest, err.Error())
 	} else {
-		respond(w, http.StatusOK, valid_email_msg)
+		respond(w, http.StatusOK, validEmailMsg)
 	}
 }
 
-func obtainEmail(r *http.Request) (Email, error) {
+func obtainEmail(r *http.Request) (email, error) {
 	decoder := json.NewDecoder(r.Body)
-	var email Email
-	err := decoder.Decode(&email)
+	var e email
+	err := decoder.Decode(&e)
 	if err != nil {
-		return Email{}, errors.New(invalid_json_msg)
+		return email{}, errors.New(invalidJSONMsg)
 	}
-	if email.Email == "" {
-		return Email{}, errors.New(json_missing_email_msg)
+	if e.Email == "" {
+		return email{}, errors.New(jsonMissingEmailMsg)
 	}
-	return email, nil
+	return e, nil
 }

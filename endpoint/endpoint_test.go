@@ -13,184 +13,89 @@ import (
 	"testing"
 )
 
-func TestEndpointGETRoot(t *testing.T) {
+func getResponse(t *testing.T, method, endpoint string, expectedStatus int, contentHeader bool, data []byte) *bytes.Buffer {
 	e := NewEndpoint("127.0.0.1", 9000, "/email")
 	e.Setup()
-
-	req, _ := http.NewRequest("GET", "/", nil)
+	req, _ := http.NewRequest(method, endpoint, bytes.NewBuffer(data))
 	w := httptest.NewRecorder()
+	if contentHeader {
+		req.Header.Add("Content-Type", "application/json")
+	}
 	e.ServeHTTP(w, req)
-	if w.Code != http.StatusNotFound {
-		t.Errorf("GET / did not return %v, but %v", http.StatusNotFound, w.Code)
+	if w.Code != expectedStatus {
+		t.Errorf("%s %s did not return expected status %d, but %d", method, endpoint, expectedStatus, w.Code)
 		t.Errorf("%v", w.Body)
 	}
+	return w.Body
+}
+
+func parseBody(t *testing.T, body *bytes.Buffer, method, endpoint string, expectedStatus int, errorMsg string) {
+	j := &response{}
+	err := json.NewDecoder(body).Decode(j)
+	if err != nil {
+		t.Errorf("Could not unmarshall response from %s %s", method, endpoint)
+	}
+	if j.StatusCode != expectedStatus {
+		t.Errorf("StatusCode in JSON was not execpted status %d, but %d", expectedStatus, j.StatusCode)
+	}
+	if j.Msg != errorMsg {
+		t.Errorf(`Msg in JSON was not exepcted string "%s", but "%s"`, j.Msg, errorMsg)
+	}
+}
+
+func TestEndpointGETRoot(t *testing.T) {
+	getResponse(t, "GET", "/", http.StatusNotFound, false, nil)
 }
 
 func TestEndpointGETRoute(t *testing.T) {
-	e := NewEndpoint("127.0.0.1", 9000, "/email")
-	e.Setup()
-
-	req, _ := http.NewRequest("GET", "/email", nil)
-	w := httptest.NewRecorder()
-	e.ServeHTTP(w, req)
-	if w.Code != http.StatusForbidden {
-		t.Errorf("GET / did not return %v, but %v", http.StatusForbidden, w.Code)
-		t.Errorf("%v", w.Body)
-	}
-	j := &response{}
-	err := json.NewDecoder(w.Body).Decode(j)
-	if err != nil {
-		t.Error("Could not unmarshall response from GET /email")
-	}
-	if j.StatusCode != http.StatusForbidden {
-		t.Errorf("StatusCode in JSON (%s) is not %s", j.StatusCode, http.StatusForbidden)
-	}
-	if j.Msg != only_post_msg {
-		t.Errorf("Msg in JSON (%s) is not %s", j.Msg, only_post_msg)
-	}
+	method := "GET"
+	endpoint := "/email"
+	body := getResponse(t, method, endpoint, http.StatusForbidden, false, nil)
+	parseBody(t, body, method, endpoint, http.StatusForbidden, onlyPostMsg)
 }
 
 func TestEndpointPOSTNonApplicationJSON(t *testing.T) {
-	e := NewEndpoint("127.0.0.1", 9000, "/email")
-	e.Setup()
-
-	req, _ := http.NewRequest("POST", "/email", nil)
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	w := httptest.NewRecorder()
-	e.ServeHTTP(w, req)
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("POST /email with content-type set to applciation/x-www-form-urlencoded did not return %v, but %v", http.StatusBadRequest, w.Code)
-		t.Errorf("%v", w.Body)
-	}
-	j := &response{}
-	err := json.NewDecoder(w.Body).Decode(j)
-	if err != nil {
-		t.Error("Could not unmarshall response from POST /email")
-	}
-	if j.StatusCode != http.StatusBadRequest {
-		t.Errorf("StatusCode in JSON (%s) is not %s", j.StatusCode, http.StatusBadRequest)
-	}
-	if j.Msg != content_type_msg {
-		t.Errorf("Msg in JSON (%s) is not %s", j.Msg, content_type_msg)
-	}
+	method := "POST"
+	endpoint := "/email"
+	body := getResponse(t, method, endpoint, http.StatusBadRequest, false, nil)
+	parseBody(t, body, method, endpoint, http.StatusBadRequest, contentTypeMsg)
 }
 
 func TestEndpointPOSTValidJSONRoot(t *testing.T) {
-	e := NewEndpoint("127.0.0.1", 9000, "/email")
-	e.Setup()
-
-	b := []byte(`{"email": "jacob"}`)
-	req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(b))
-	req.Header.Add("Content-Type", "application/json")
-	w := httptest.NewRecorder()
-	e.ServeHTTP(w, req)
-	if w.Code != http.StatusNotFound {
-		t.Errorf("POST / expected status code %v, but received %v", http.StatusNotFound, w.Code)
-		t.Errorf("%v", w.Body)
-	}
+	method := "POST"
+	endpoint := "/"
+	data := []byte(`{"email": "jacob"}`)
+	getResponse(t, method, endpoint, http.StatusNotFound, true, data)
 }
 
 func TestEndpointPOSTValidJSON(t *testing.T) {
-	e := NewEndpoint("127.0.0.1", 9000, "/email")
-	e.Setup()
-
-	b := []byte(`{"email": "jacob"}`)
-	req, _ := http.NewRequest("POST", "/email", bytes.NewBuffer(b))
-	req.Header.Add("Content-Type", "application/json")
-	w := httptest.NewRecorder()
-	e.ServeHTTP(w, req)
-	if w.Code != http.StatusOK {
-		t.Errorf("POST /email with content-type set to applciation/json did not return %v, but %v", http.StatusOK, w.Code)
-		t.Errorf("%v", w.Body)
-	}
-	j := &response{}
-	err := json.NewDecoder(w.Body).Decode(j)
-	if err != nil {
-		t.Error("Could not unmarshall response from POST /email")
-	}
-	if j.StatusCode != http.StatusOK {
-		t.Errorf("StatusCode in JSON (%s) is not %s", j.StatusCode, http.StatusBadRequest)
-	}
-	if j.Msg != valid_email_msg {
-		t.Errorf("Msg in JSON (%s) is not %s", j.Msg, valid_email_msg)
-	}
+	method := "POST"
+	endpoint := "/email"
+	data := []byte(`{"email": "jacob"}`)
+	body := getResponse(t, method, endpoint, http.StatusOK, true, data)
+	parseBody(t, body, method, endpoint, http.StatusOK, validEmailMsg)
 }
 
 func TestEndpointPOSTJSONEmptyEmail(t *testing.T) {
-	e := NewEndpoint("127.0.0.1", 9000, "/email")
-	e.Setup()
-
-	b := []byte(`{"email": ""}`)
-	req, _ := http.NewRequest("POST", "/email", bytes.NewBuffer(b))
-	req.Header.Add("Content-Type", "application/json")
-	w := httptest.NewRecorder()
-	e.ServeHTTP(w, req)
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("POST /email with content-type set to applciation/json did not return %v, but %v", http.StatusBadRequest, w.Code)
-		t.Errorf("%v", w.Body)
-	}
-	j := &response{}
-	err := json.NewDecoder(w.Body).Decode(j)
-	if err != nil {
-		t.Error("Could not unmarshall response from POST /email")
-	}
-	if j.StatusCode != http.StatusBadRequest {
-		t.Errorf("StatusCode in JSON (%s) is not %s", j.StatusCode, http.StatusBadRequest)
-	}
-	if j.Msg != json_missing_email_msg {
-		t.Errorf("Msg in JSON (%s) is not %s", j.Msg, json_missing_email_msg)
-	}
+	method := "POST"
+	endpoint := "/email"
+	data := []byte(`{"email": ""}`)
+	body := getResponse(t, method, endpoint, http.StatusBadRequest, true, data)
+	parseBody(t, body, method, endpoint, http.StatusBadRequest, jsonMissingEmailMsg)
 }
 
 func TestEndpointPOSTJSONMissingEmail(t *testing.T) {
-	e := NewEndpoint("127.0.0.1", 9000, "/email")
-	e.Setup()
-
-	b := []byte(`{}`)
-	req, _ := http.NewRequest("POST", "/email", bytes.NewBuffer(b))
-	req.Header.Add("Content-Type", "application/json")
-	w := httptest.NewRecorder()
-	e.ServeHTTP(w, req)
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("POST /email with content-type set to applciation/json did not return %v, but %v", http.StatusBadRequest, w.Code)
-		t.Errorf("%v", w.Body)
-	}
-	j := &response{}
-	err := json.NewDecoder(w.Body).Decode(j)
-	if err != nil {
-		t.Error("Could not unmarshall response from POST /email")
-	}
-	if j.StatusCode != http.StatusBadRequest {
-		t.Errorf("StatusCode in JSON (%s) is not %s", j.StatusCode, http.StatusBadRequest)
-	}
-	if j.Msg != json_missing_email_msg {
-		t.Errorf("Msg in JSON (%s) is not %s", j.Msg, json_missing_email_msg)
-	}
+	method := "POST"
+	endpoint := "/email"
+	data := []byte(`{}`)
+	body := getResponse(t, method, endpoint, http.StatusBadRequest, true, data)
+	parseBody(t, body, method, endpoint, http.StatusBadRequest, jsonMissingEmailMsg)
 }
 
 func TestEndpointPOSTInvalidJSON(t *testing.T) {
-	e := NewEndpoint("127.0.0.1", 9000, "/email")
-	e.Setup()
-
-	b := []byte(`{"email": "jacob"`)
-	req, _ := http.NewRequest("POST", "/email", bytes.NewBuffer(b))
-	req.Header.Add("Content-Type", "application/json")
-	w := httptest.NewRecorder()
-	e.ServeHTTP(w, req)
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("POST /email with content-type set to applciation/json did not return %v, but %v", http.StatusBadRequest, w.Code)
-		t.Errorf("%v", w.Body)
-	}
-
-	j := &response{}
-	err := json.NewDecoder(w.Body).Decode(j)
-	if err != nil {
-		t.Error("Could not unmarshall response from POST /email")
-	}
-	if j.StatusCode != http.StatusBadRequest {
-		t.Errorf("StatusCode in JSON (%s) is not %s", j.StatusCode, http.StatusBadRequest)
-	}
-	if j.Msg != invalid_json_msg {
-		t.Errorf("Msg in JSON (%s) is not %s", j.Msg, invalid_json_msg)
-	}
+	method := "POST"
+	endpoint := "/email"
+	data := []byte(`{"email": "jacob"`)
+	body := getResponse(t, method, endpoint, http.StatusBadRequest, true, data)
+	parseBody(t, body, method, endpoint, http.StatusBadRequest, invalidJSONMsg)
 }
