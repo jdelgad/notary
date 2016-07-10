@@ -3,17 +3,14 @@
 [![Build Status](https://travis-ci.org/jdelgad/notary.svg?branch=master)](https://travis-ci.org/jdelgad/notary)
 [![codecov](https://codecov.io/gh/jdelgad/notary/branch/master/graph/badge.svg)](https://codecov.io/gh/jdelgad/notary)
 [![GoDoc](https://godoc.org/github.com/jdelgad/notary?status.svg)](https://godoc.org/github.com/jdelgad/notary)
+[![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/jdelgad/notary/master/LICENSE)
 
 An HTTP REST endpoint service reporting whether a POSTed JSON object containing
 an email is valid.
 
-Validation is against [RFC5322](https://tools.ietf.org/html/rfc3696)
-([3.2.3](https://tools.ietf.org/html/rfc5322#section-3.2.3) and
- [3.4.1](https://tools.ietf.org/html/rfc5322#section-3.4.1)),
-[RFC5321](https://tools.ietf.org/html/rfc5322#section-3.4.1),
-[RFC3396](https://tools.ietf.org/html/rfc3696https://tools.ietf.org/html/rfc3696)
-and its associated
-[errata](http://www.rfc-editor.org/errata_search.php?rfc=3696).
+Validation is against [RFC5322](https://tools.ietf.org/html/rfc5322)
+(§[3.2.3](https://tools.ietf.org/html/rfc5322#section-3.2.3) and
+ §[3.4.1](https://tools.ietf.org/html/rfc5322#section-3.4.1)).
 
 ### Input:
 * Only POST method is supported to route `/email`
