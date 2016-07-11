@@ -11,17 +11,27 @@ an email is valid.
 Validation is against [RFC5322](https://tools.ietf.org/html/rfc5322)
 (§[3.2.3](https://tools.ietf.org/html/rfc5322#section-3.2.3) and
  §[3.4.1](https://tools.ietf.org/html/rfc5322#section-3.4.1)).
+* Notable differences:
+  * Obsolete address formats are not parsed, including addresses with embedded route information.
+  * Group addresses are not parsed.
+  * The full range of spacing (the CFWS syntax element) is not supported, such as breaking addresses across lines.
 
 ### Input:
 * Only POST method is supported to route `/email`
   * Any other routes will return a `404 page not found` error.
-* Header `Content-Type` must be `application/json`
+* Header `Content-Type` must be `application/json`.
+  * All other types will return a `400 Bad Request` error.
 * JSON Object: `{"email": "jacob@gmail.com"}`.
   * May contain more fields, but only email is parsed.
   * Email must be a string value.
 
 ### Output:
 * JSON response in Body: `{"StatusCode": int, Msg: "string"}`
+  * Response Codes:
+    1. `404 page not found` when the HTTP route is not _/email_.
+    1. `403 Forbidden` if the HTTP request method is not _POST_.
+    1. `400 Bad Request` if the `Content-Type` header is not _application/json_, JSON POSTed is invalid, JSON POSTed is missing an email key, or if the email address is invalid.
+    1. `200 OK` only when all conditions have been met (POST /email with JSON: _{ "email": "validRFC5322Email" }_).
 * HTTP Header `Status-Line` contains the same
 [HTTP Status Code](https://en.wikipedia.org/wiki/List_of_HTTP_status_codes) as the JSON returned.
 
