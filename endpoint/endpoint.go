@@ -11,6 +11,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	//"net/mail"
+	"net/mail"
 )
 
 type response struct {
@@ -34,7 +36,8 @@ type Endpoint struct {
 const (
 	onlyPostMsg         = "Only POST method is supported."
 	contentTypeMsg      = "Content-Type header must be application/json."
-	validEmailMsg       = "Email is valid."
+	invalidEmailMsg     = "Email does not conform to RFC 5322."
+	validEmailMsg       = "Email conforms to RFC 5322."
 	invalidJSONMsg      = "Invalid JSON request."
 	jsonMissingEmailMsg = "Invalid JSON request. Missing key email."
 )
@@ -89,11 +92,16 @@ func verify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := obtainEmail(r)
+	email, err := obtainEmail(r)
 	if err != nil {
 		respond(w, http.StatusBadRequest, err.Error())
 	} else {
-		respond(w, http.StatusOK, validEmailMsg)
+		_, err = mail.ParseAddress(email.Email)
+		if err != nil {
+			respond(w, http.StatusBadRequest, invalidEmailMsg)
+		} else {
+			respond(w, http.StatusOK, validEmailMsg)
+		}
 	}
 }
 

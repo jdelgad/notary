@@ -68,12 +68,20 @@ func TestEndpointPOSTValidJSONRoot(t *testing.T) {
 	getResponse(t, method, endpoint, http.StatusNotFound, true, data)
 }
 
-func TestEndpointPOSTValidJSON(t *testing.T) {
+func TestEndpointPOSTValidJSONValidEmail(t *testing.T) {
+	method := "POST"
+	endpoint := "/email"
+	data := []byte(`{"email": "jacob@gmail.com"}`)
+	body := getResponse(t, method, endpoint, http.StatusOK, true, data)
+	parseBody(t, body, method, endpoint, http.StatusOK, validEmailMsg)
+}
+
+func TestEndpointPOSTValidJSONInvalidEmail(t *testing.T) {
 	method := "POST"
 	endpoint := "/email"
 	data := []byte(`{"email": "jacob"}`)
-	body := getResponse(t, method, endpoint, http.StatusOK, true, data)
-	parseBody(t, body, method, endpoint, http.StatusOK, validEmailMsg)
+	body := getResponse(t, method, endpoint, http.StatusBadRequest, true, data)
+	parseBody(t, body, method, endpoint, http.StatusBadRequest, invalidEmailMsg)
 }
 
 func TestEndpointPOSTJSONEmptyEmail(t *testing.T) {
