@@ -92,11 +92,11 @@ func verify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	email, err := obtainEmail(r)
+	em, err := obtainEmail(r)
 	if err != nil {
 		respond(w, http.StatusBadRequest, err.Error())
 	} else {
-		_, err = mail.ParseAddress(email.Email)
+		_, err = mail.ParseAddress(em.Email)
 		if err != nil {
 			respond(w, http.StatusBadRequest, invalidEmailMsg)
 		} else {
